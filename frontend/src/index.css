@@ -1,10 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&display=swap');
+@import 'pretendard/dist/web/static/pretendard.css';
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Pretendard', sans-serif;
+}
+
 :root {
-  font: 16px/145% system-ui, 'Segoe UI', Roboto, sans-serif;
+  font: 16px/145% 'Pretendard', system-ui, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light dark;
 }
 
-* {
-  box-sizing: border-box;
+/* 도보 시간 / 급똥지수 / 거리처럼 스톱워치성 숫자에 쓰는 모노스페이스 폰트 */
+.font-mono-time {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 body {
