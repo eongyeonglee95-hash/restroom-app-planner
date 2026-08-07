@@ -53,6 +53,7 @@ GRANT ALL PRIVILEGES ON chamjima.* TO 'chamjima'@'localhost';
 export DB_PASSWORD=위에서_정한_비밀번호
 export KAKAO_REST_API_KEY=...   # 카카오 개발자센터 REST API 키 (선택, 없으면 일부 기능 비활성)
 export TMAP_APP_KEY=...          # 현재 미사용 (도보경로는 OSRM으로 대체됨)
+export SEOUL_PHARMACY_API_KEY=... # 서울 열린데이터광장 인증키 (약국 데이터 임포트용)
 ```
 
 `frontend/.env.local` (git에 안 올라감, 직접 생성):
@@ -67,3 +68,11 @@ DB의 화장실 데이터(서울시 공공데이터, 5,619건)는 git에 포함�
 `backend/data/공중화장실정보_서울특별시.csv` 원본 파일을 구해서 같은 경로에 두고,
 `application.properties`의 `app.import.restrooms.enabled=true`로 바꿔 한 번 실행하면
 (`KAKAO_REST_API_KEY` 필요, geocoding용) 자동으로 적재된다. 이후 다시 `false`로 되돌릴 것.
+
+### 4. 약국 데이터 ("전체" 레이어)
+
+`application.properties`의 `app.import.pharmacies.enabled=true`로 바꿔 한 번 실행하면
+(`SEOUL_PHARMACY_API_KEY` 필요) 서울시 약국 운영시간 정보 Open API(`TbPharmacyOperateInfo`)를
+페이지네이션으로 전부 받아와 적재한다(좌표 포함이라 geocoding 불필요). 이후 다시 `false`로
+되돌릴 것. "야간" 레이어(공공심야약국 39개소)는 API가 없어 수동 시드 데이터로 관리한다
+(기획서 참고).

@@ -10,25 +10,25 @@ function App() {
 
   return (
     <div className="flex h-screen flex-col">
-      <nav className="flex border-b border-slate-200">
+      <nav className="flex gap-1.5 bg-cham-pink p-1.5">
         <button
           type="button"
           onClick={() => setTab('restroom')}
           className={
             tab === 'restroom'
-              ? 'flex-1 border-b-2 border-slate-900 py-3.5 text-base font-semibold text-slate-900'
-              : 'flex-1 py-3.5 text-base font-semibold text-slate-400'
+              ? 'flex-1 rounded-2xl bg-white py-3.5 text-lg font-extrabold tracking-tight text-cham-coral shadow-[0_2px_8px_rgba(245,168,181,0.55)] transition-colors'
+              : 'flex-1 rounded-2xl py-3.5 text-lg font-bold tracking-tight text-cham-ink/40 transition-colors hover:bg-white/40 hover:text-cham-ink/60'
           }
         >
-          🚽 급똥
+          🧻 참지마<span className="text-sm font-bold opacity-60">(급똥)</span>
         </button>
         <button
           type="button"
           onClick={() => setTab('pharmacy')}
           className={
             tab === 'pharmacy'
-              ? 'flex-1 border-b-2 border-slate-900 py-3.5 text-base font-semibold text-slate-900'
-              : 'flex-1 py-3.5 text-base font-semibold text-slate-400'
+              ? 'flex-1 rounded-2xl bg-white py-3.5 text-lg font-extrabold tracking-tight text-cham-purple shadow-[0_2px_8px_rgba(245,168,181,0.55)] transition-colors'
+              : 'flex-1 rounded-2xl py-3.5 text-lg font-bold tracking-tight text-cham-ink/40 transition-colors hover:bg-white/40 hover:text-cham-ink/60'
           }
         >
           💊 약국

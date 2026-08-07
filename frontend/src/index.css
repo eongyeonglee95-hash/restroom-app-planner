@@ -4,6 +4,20 @@
 
 @theme {
   --font-sans: 'Pretendard', sans-serif;
+
+  /* 참지마 브랜드 팔레트 — 휴지 마스코트 일러스트의 핑크 파스텔 톤에서 추출 */
+  --color-cham-pink: #fadce0;   /* 소프트 핑크 — 배경/거터 */
+  --color-cham-blush: #f5a8b5;  /* 블러시 — 그림자/보조 강조 */
+  --color-cham-coral: #ef6b6b;  /* 코랄 — 마스코트 입, 강조/CTA */
+  --color-cham-sky: #dceef8;    /* 라이트 블루 — 휴지 롤 */
+  --color-cham-blue: #4a6fb5;   /* 딥 블루 — 롤 심지, 메인 액센트 */
+  --color-cham-ink: #3f3a44;    /* 잉크 — 본문 텍스트 */
+
+  /* 약국 탭 전용 액센트 — 약사 일러스트의 보라/오렌지에서 추출.
+     급똥 탭(핑크/코랄)과 같은 시스템 안에서 탭 정체성을 구분한다. */
+  --color-cham-purple: #6b4fd8; /* 보라 — 약국 메인 액센트 */
+  --color-cham-lilac: #ede8fb;  /* 라일락 — 보라의 옅은 면 */
+  --color-cham-tangerine: #f0a73e; /* 오렌지 — 보조 강조 */
 }
 
 :root {

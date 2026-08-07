@@ -16,5 +16,7 @@ services:
         sync: false
       - key: TMAP_APP_KEY
         sync: false
+      - key: SEOUL_PHARMACY_API_KEY
+        sync: false
       - key: CORS_ALLOWED_ORIGINS
         sync: false

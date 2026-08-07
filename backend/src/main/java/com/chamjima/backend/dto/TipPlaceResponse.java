@@ -6,6 +6,7 @@ public record TipPlaceResponse(
 	String address,
 	double latitude,
 	double longitude,
-	String tip
+	String tip,
+	String phone
 ) {
 }

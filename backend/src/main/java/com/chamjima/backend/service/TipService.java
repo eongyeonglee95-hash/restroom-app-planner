@@ -27,6 +27,9 @@ public class TipService {
 
 		CATEGORY_TIPS.put("MT1", "지하 1층에 화장실이 있는 경우가 많아요.");
 		CATEGORY_LABELS.put("MT1", "대형마트/백화점");
+
+		CATEGORY_TIPS.put("OL7", "화장실을 개방하는 주유소가 많아요. 직원에게 물어보세요.");
+		CATEGORY_LABELS.put("OL7", "주유소");
 	}
 
 	private final KakaoPlaceSearchClient placeSearchClient;
@@ -42,7 +45,8 @@ public class TipService {
 					place.address(),
 					place.lat(),
 					place.lng(),
-					CATEGORY_TIPS.get(categoryCode)
+					CATEGORY_TIPS.get(categoryCode),
+					place.phone()
 				)))
 			.toList();
 	}

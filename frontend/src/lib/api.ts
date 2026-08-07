@@ -13,6 +13,7 @@ export interface UrgentPlace {
   openHours: string | null
   hasDiaperTable: boolean
   tip: string | null
+  phone: string | null
   averageRating: number | null
   reviewCount: number
   urgencyScore: number | null
@@ -42,6 +43,23 @@ export interface TipPlace {
   latitude: number
   longitude: number
   tip: string
+  phone: string | null
+}
+
+export interface PharmacyPlace {
+  id: string
+  type: 'GENERAL' | 'NIGHT'
+  name: string
+  address: string
+  phone: string | null
+  latitude: number
+  longitude: number
+  distanceMeters: number
+  openNow: boolean
+  todayHours: string
+  walkingTimeSeconds: number
+  walkingDistanceMeters: number
+  path: { lat: number; lng: number }[]
 }
 
 export interface ReviewRequest {
@@ -84,6 +102,29 @@ export async function fetchNearbyTips(lat: number, lng: number): Promise<TipPlac
   return response.json()
 }
 
+export async function fetchNearbyPharmacies(
+  lat: number,
+  lng: number,
+  layer: 'ALL' | 'GENERAL' | 'NIGHT' = 'ALL',
+  openNowOnly = true,
+  radiusMeters = 3000,
+  limit = 30,
+): Promise<PharmacyPlace[]> {
+  const params = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lng),
+    radiusMeters: String(radiusMeters),
+    limit: String(limit),
+    layer,
+    openNowOnly: String(openNowOnly),
+  })
+  const response = await fetch(`${API_BASE_URL}/api/pharmacies/nearby?${params}`)
+  if (!response.ok) {
+    throw new Error(`서버 오류 (${response.status})`)
+  }
+  return response.json()
+}
+
 export async function submitReview(restroomId: string, review: ReviewRequest): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/restrooms/${restroomId}/reviews`, {
     method: 'POST',
@@ -101,6 +142,15 @@ export async function fetchReviews(restroomId: string): Promise<ReviewResponse[]
     throw new Error(`서버 오류 (${response.status})`)
   }
   return response.json()
+}
+
+/**
+ * 약국 영업시간 문자열("09:00~19:00")을 시작/마감으로 분리한다.
+ * "오늘 휴무" / "오늘 미운영"처럼 시간이 없는 경우엔 null.
+ */
+export function businessHoursOf(todayHours: string): { open: string; close: string } | null {
+  const matched = todayHours.match(/^\s*(\d{1,2}:\d{2})\s*~\s*(\d{1,2}:\d{2})/)
+  return matched ? { open: matched[1], close: matched[2] } : null
 }
 
 export function formatWalkingTime(totalSeconds: number): string {

@@ -9,7 +9,7 @@ import org.springframework.web.client.RestClient;
 @Component
 public class KakaoPlaceSearchClient {
 
-	public record Place(String name, String address, double lat, double lng) {
+	public record Place(String name, String address, double lat, double lng, String phone) {
 	}
 
 	private final RestClient restClient;
@@ -48,12 +48,16 @@ public class KakaoPlaceSearchClient {
 		}
 
 		return documents.stream()
-			.map(doc -> new Place(
-				(String) doc.get("place_name"),
-				(String) doc.get("road_address_name"),
-				Double.parseDouble((String) doc.get("y")),
-				Double.parseDouble((String) doc.get("x"))
-			))
+			.map(doc -> {
+				String phone = (String) doc.get("phone");
+				return new Place(
+					(String) doc.get("place_name"),
+					(String) doc.get("road_address_name"),
+					Double.parseDouble((String) doc.get("y")),
+					Double.parseDouble((String) doc.get("x")),
+					(phone == null || phone.isBlank()) ? null : phone
+				);
+			})
 			.toList();
 	}
 }

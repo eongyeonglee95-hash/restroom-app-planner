@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { UrgentPlace, ReviewResponse, ReviewRequest } from '../lib/api'
-import { formatWalkingTime, fetchReviews, kakaoDirectionsUrl, kakaoPlaceUrl, naverMapSearchUrl } from '../lib/api'
+import { formatWalkingTime, fetchReviews, kakaoDirectionsUrl, naverMapSearchUrl } from '../lib/api'
 import { summarizeReviewTags } from '../lib/reviewSummary'
 import { TIER_CLASS, tierOf } from '../lib/tier'
 import { resolvePlaceType, isInternallyManaged, type PlaceType } from '../lib/placeType'
@@ -20,13 +20,11 @@ const MOOD_EMOJI: Record<ReviewResponse['mood'], string> = {
   BAD: '😱',
 }
 
-// TODO: 카페 "매장 소개"는 카카오 Place Detail API 연동 전까지 임시 문구 (실제 매장별 데이터 아님)
-const CAFE_INTRO_FALLBACK = '좌석 이용과 테이크아웃이 모두 가능한 매장입니다.'
-
 export function categoryIcon(place: UrgentPlace): string {
   if (place.type === 'TIP') {
     if (place.category === '편의점') return '🏪'
     if (place.category === '카페') return '☕'
+    if (place.category === '주유소') return '⛽'
     return '🏬'
   }
   return '🚻'
@@ -130,20 +128,12 @@ function InternalReviewSection({
         </div>
       )}
 
-      {showReviewForm ? (
+      {showReviewForm && (
         <ReviewForm
           submitting={submittingReview}
           onCancel={onToggleReviewForm}
           onSubmit={(review) => onSubmitReview(place.id, review)}
         />
-      ) : (
-        <button
-          type="button"
-          onClick={onToggleReviewForm}
-          className="mt-3 w-full rounded-lg border border-blue-200 py-2 text-center text-xs font-semibold text-blue-600"
-        >
-          ✍️ 후기 작성
-        </button>
       )}
     </div>
   )
@@ -156,11 +146,10 @@ function ExternalPlaceInfoSection({ place, placeType }: { place: UrgentPlace; pl
         💡 {place.tip ?? '화장실 이용 가능 여부는 매장 직원에게 확인해 주세요.'}
       </div>
 
-      {placeType === 'CAFE' && (
-        <div className="mt-2">
-          <p className="text-[11px] font-semibold text-slate-400">매장 소개</p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-600">{CAFE_INTRO_FALLBACK}</p>
-        </div>
+      {place.phone && (
+        <a href={`tel:${place.phone}`} className="mt-2 flex w-fit items-center gap-1 text-xs font-medium text-slate-600">
+          📞 {place.phone}
+        </a>
       )}
 
       {/* TODO: 카카오/네이버 별점·리뷰 수는 각 Place Detail API 연동 전까지 실제 수치를 표시하지 않음
@@ -171,24 +160,16 @@ function ExternalPlaceInfoSection({ place, placeType }: { place: UrgentPlace; pl
         화장실 이용 가능 여부는 매장 직원에게 확인해 주세요.
       </div>
 
-      <div className="mt-2 flex gap-2">
-        <a
-          href={kakaoPlaceUrl(place.name, place.latitude, place.longitude)}
-          target="_blank"
-          rel="noreferrer"
-          className="flex-1 rounded-lg border border-slate-200 py-2 text-center text-[11px] font-semibold text-slate-600"
-        >
-          카카오맵에서 보기
-        </a>
+      {placeType === 'CAFE' && (
         <a
           href={naverMapSearchUrl(place.name)}
           target="_blank"
           rel="noreferrer"
-          className="flex-1 rounded-lg border border-slate-200 py-2 text-center text-[11px] font-semibold text-slate-600"
+          className="mt-2 block rounded-lg border border-slate-200 py-2 text-center text-[11px] font-semibold text-slate-600"
         >
-          네이버지도에서 보기
+          💬 네이버에서 리뷰 보기
         </a>
-      </div>
+      )}
     </div>
   )
 }
@@ -252,9 +233,18 @@ function DetailCard({ place, origin, onSubmitReview, submittingReview, refreshKe
           <p className="truncate text-[11px] text-slate-400">{place.openHours ?? '운영시간 정보 없음'}</p>
         </div>
         {isInternal && place.urgencyScore !== null && (
-          <div className={`shrink-0 rounded-xl px-2.5 py-1.5 text-center ${tier.bg}`}>
-            <div className={`font-mono-time text-sm font-bold leading-tight ${tier.text}`}>{place.urgencyScore}</div>
-            <div className="text-[9px] font-medium leading-tight text-slate-400">급똥지수</div>
+          <div className="flex w-20 shrink-0 flex-col gap-1">
+            <div className={`rounded-xl px-1 py-1.5 text-center ${tier.bg}`}>
+              <div className={`font-mono-time text-sm font-bold leading-tight ${tier.text}`}>{place.urgencyScore}</div>
+              <div className="text-[9px] font-medium leading-tight text-slate-400">급똥지수</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowReviewForm((v) => !v)}
+              className="whitespace-nowrap rounded-xl bg-blue-600 px-1 py-2.5 text-center text-[10px] font-bold leading-tight text-white"
+            >
+              ✍️ 후기작성
+            </button>
           </div>
         )}
       </div>
