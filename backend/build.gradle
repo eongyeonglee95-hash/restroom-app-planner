@@ -25,7 +25,10 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+	// 로컬 개발은 MySQL(README 참고), 배포는 Neon(Postgres, 무료) - JDBC URL 스킴으로
+	// 드라이버가 자동 선택되므로 코드 변경 없이 둘 다 지원한다. 네이티브 SQL이 없어 가능.
 	runtimeOnly 'com.mysql:mysql-connector-j'
+	runtimeOnly 'org.postgresql:postgresql'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'

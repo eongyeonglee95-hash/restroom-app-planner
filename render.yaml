@@ -15,12 +15,15 @@ services:
       - key: VITE_API_BASE_URL
         sync: false
 
+  # 2026-08-10: 무료로 배포하려고 백엔드는 Google Cloud Run으로 옮겼다(README "배포" 항목
+  # 참고). 이 블록은 나중에 Render 유료 인스턴스로 돌아갈 경우를 위해 남겨둔다 - 지금의
+  # backend/Dockerfile(OSRM 포함, 약 1GB 필요)에는 더 이상 유효하지 않은 plan: free를
+  # 빼놨으니, 쓰려면 1GB 이상 유료 플랜을 직접 골라야 한다.
   - type: web
     name: chamjima-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: free
     envVars:
       - key: DB_URL
         sync: false
