@@ -30,7 +30,8 @@ public class RestroomService {
 	private final ReviewService reviewService;
 
 	public List<NearbyRestroomResponse> findNearby(double lat, double lng, double radiusMeters, int limit) {
-		List<Restroom> candidates = restroomRepository.findByStatusAndLatitudeIsNotNull(Restroom.Status.ACTIVE);
+		List<Restroom> candidates =
+			restroomRepository.findByStatusAndCanonicalIdIsNullAndLatitudeIsNotNull(Restroom.Status.ACTIVE);
 
 		List<NearbyRestroomResponse> withoutRatings = candidates.stream()
 			.map(restroom -> {

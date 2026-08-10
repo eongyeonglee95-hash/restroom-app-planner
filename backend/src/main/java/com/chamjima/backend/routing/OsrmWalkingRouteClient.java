@@ -7,13 +7,23 @@ import java.util.Optional;
 import com.chamjima.backend.routing.TmapWalkingRouteClient.PathPoint;
 import com.chamjima.backend.routing.TmapWalkingRouteClient.WalkingRoute;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 /**
- * OSRM(오픈소스 라우팅 엔진) 공개 데모 서버의 foot(도보) 프로필. 인증키 없이 무료로
- * 실제 도보 경로를 계산해준다. 다만 커뮤니티가 운영하는 공유 서버라 SLA가 없고
- * 느리거나 일시적으로 안 될 수 있어, Tmap 다음 순위의 폴백으로만 사용한다.
+ * OSRM(오픈소스 라우팅 엔진)의 foot(도보) 프로필로 실제 보행 경로를 계산한다.
+ *
+ * <p><b>반드시 foot 프로필로 전처리한 자체 OSRM 인스턴스를 가리켜야 한다.</b> 공개 데모
+ * 서버(router.project-osrm.org)는 두 가지 이유로 쓰지 않는다: (1) 개발·데모용이라 서비스
+ * 트래픽을 보내면 안 되고, (2) 그 서버의 foot 프로필이 실제로는 자동차처럼 동작해서
+ * 소요시간이 시속 34~54km로 나온다(실측). 자체 인스턴스는 시속 5km로 일관되게 나온다.
+ *
+ * <p>거리도 다르다 — 실측에서 같은 구간이 차도 기준보다 16% 길게(보행 불가 구간 우회),
+ * 다른 구간은 짧게(보행자 전용 지름길) 나왔다. 그래서 duration을 그대로 신뢰한다.
+ *
+ * <p>준비 방법은 README의 "도보 경로 서버(OSRM)" 항목 참고. 서버가 없으면 이 클라이언트는
+ * 조용히 실패하고 상위의 폴백(Tmap → 카카오 → 직선거리)으로 넘어간다.
  */
 @Slf4j
 @Component
@@ -21,9 +31,9 @@ public class OsrmWalkingRouteClient {
 
 	private final RestClient restClient;
 
-	public OsrmWalkingRouteClient() {
+	public OsrmWalkingRouteClient(@Value("${app.routing.osrm.base-url:http://localhost:5001}") String baseUrl) {
 		this.restClient = RestClient.builder()
-			.baseUrl("http://router.project-osrm.org")
+			.baseUrl(baseUrl)
 			.defaultHeader("User-Agent", "chamjima-app")
 			.defaultHeader("Accept-Encoding", "identity")
 			.build();

@@ -26,7 +26,7 @@ public class ReviewService {
 	}
 
 	public List<ReviewResponse> findByRestroomId(Long restroomId) {
-		return reviewRepository.findByRestroomIdOrderByCreatedAtDesc(restroomId).stream()
+		return reviewRepository.findByRestroomIdOrderByCreatedAtDesc(canonicalIdOf(restroomId)).stream()
 			.map(ReviewResponse::from)
 			.toList();
 	}
@@ -37,7 +37,7 @@ public class ReviewService {
 		}
 
 		Review review = new Review();
-		review.setRestroomId(restroomId);
+		review.setRestroomId(canonicalIdOf(restroomId));
 		review.setMood(request.mood());
 		review.setHasTissue(request.hasTissue());
 		review.setHasBidet(request.hasBidet());
@@ -48,6 +48,16 @@ public class ReviewService {
 		review.setComment(normalizeComment(request.comment()));
 
 		return ReviewResponse.from(reviewRepository.save(review));
+	}
+
+	/**
+	 * 중복 행의 id로 들어와도 대표 행 id로 바꿔준다. 중복 행은 목록에 안 나오지만, 예전에
+	 * 발급된 id를 들고 있는 클라이언트가 있을 수 있어 리뷰가 갈라지지 않도록 한 곳으로 모은다.
+	 */
+	private Long canonicalIdOf(Long restroomId) {
+		return restroomRepository.findById(restroomId)
+			.map(restroom -> restroom.getCanonicalId() == null ? restroom.getId() : restroom.getCanonicalId())
+			.orElse(restroomId);
 	}
 
 	private String normalizeComment(String comment) {

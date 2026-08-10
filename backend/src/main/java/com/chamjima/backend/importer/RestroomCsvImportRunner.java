@@ -28,6 +28,14 @@ public class RestroomCsvImportRunner implements CommandLineRunner {
 	@Value("${app.import.restrooms.path:data/공중화장실정보_서울특별시.csv}")
 	private String csvPath;
 
+	/**
+	 * 좌표를 매번 다시 계산할지 여부. 5,600건을 전부 geocoding하면 카카오 API를 그만큼
+	 * 호출하므로 기본값은 false다. 잘못 들어간 좌표를 일괄 교정할 때만 켠다
+	 * (심야약국은 38건뿐이라 기본값이 true인 것과 다르다).
+	 */
+	@Value("${app.import.restrooms.refresh-coordinates:false}")
+	private boolean refreshCoordinates;
+
 	@Override
 	public void run(String... args) throws Exception {
 		int imported = 0;
@@ -60,7 +68,7 @@ public class RestroomCsvImportRunner implements CommandLineRunner {
 				restroom.setHasDiaperTable(hasDiaperTable);
 				restroom.setStatus(Restroom.Status.ACTIVE);
 
-				if (restroom.getLatitude() == null) {
+				if (refreshCoordinates || restroom.getLatitude() == null) {
 					try {
 						geocodingClient.geocode(address).ifPresentOrElse(
 							latLng -> {

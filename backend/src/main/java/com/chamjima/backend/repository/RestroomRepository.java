@@ -8,5 +8,6 @@ import com.chamjima.backend.domain.Restroom;
 public interface RestroomRepository extends JpaRepository<Restroom, Long> {
 	Optional<Restroom> findByExternalId(String externalId);
 
-	List<Restroom> findByStatusAndLatitudeIsNotNull(Restroom.Status status);
+	/** 지도/목록 노출용. 중복 행(canonical_id != null)은 제외한다. */
+	List<Restroom> findByStatusAndCanonicalIdIsNullAndLatitudeIsNotNull(Restroom.Status status);
 }

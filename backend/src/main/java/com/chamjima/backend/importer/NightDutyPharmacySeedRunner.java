@@ -8,6 +8,7 @@ import com.chamjima.backend.geocoding.KakaoGeocodingClient;
 import com.chamjima.backend.repository.NightDutyPharmacyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -76,6 +77,13 @@ public class NightDutyPharmacySeedRunner implements CommandLineRunner {
 	private final NightDutyPharmacyRepository nightDutyPharmacyRepository;
 	private final KakaoGeocodingClient geocodingClient;
 
+	/**
+	 * 좌표를 매번 다시 계산할지 여부. 38건뿐이라 비용이 사실상 없어서 기본값이 true다.
+	 * false면 좌표가 비어 있는 행만 채우므로, 한번 잘못 들어간 좌표가 영원히 남는다.
+	 */
+	@Value("${app.import.night-duty-pharmacies.refresh-coordinates:true}")
+	private boolean refreshCoordinates;
+
 	@Override
 	public void run(String... args) {
 		int imported = 0;
@@ -103,7 +111,7 @@ public class NightDutyPharmacySeedRunner implements CommandLineRunner {
 			pharmacy.setNightEnd(NIGHT_END);
 			pharmacy.setStatus(NightDutyPharmacy.Status.ACTIVE);
 
-			if (pharmacy.getLatitude() == null) {
+			if (refreshCoordinates || pharmacy.getLatitude() == null) {
 				try {
 					geocodingClient.geocode(fullAddress).ifPresentOrElse(
 						latLng -> {
