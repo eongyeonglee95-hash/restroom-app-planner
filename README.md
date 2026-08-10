@@ -109,64 +109,86 @@ osrm-routed --algorithm mld --port 5001 seoul.osrm
 되돌릴 것. "야간" 레이어(공공심야약국 39개소)는 API가 없어 수동 시드 데이터로 관리한다
 (기획서 참고).
 
-## 배포 (무료)
+## 배포 (무료) — 2026-08-10 실제 배포 완료
 
-2026-08-10 기준 조사로 확정한 조합. 완전 무료지만 유휴 상태에서 첫 요청은 콜드 스타트가
-걸린다(아래 참고) — "3초 안에"라는 제품 카피와는 타협이 있는 지점이다.
-
-| | 선택 | 비고 |
+| | 선택 | 실제 URL / 프로젝트 |
 |---|---|---|
-| 프론트 | Render Static Site | 무료, 카드 불필요, 중지 없음 |
-| 백엔드(API+OSRM) | Google Cloud Run | 월 2백만 요청 무료, **카드 등록 필수**, 한도 초과 시 자동 과금 |
-| DB | Neon (Postgres) | 무료, 카드 불필요, 유휴 5분 후 슬립 → 다음 요청에 수백ms 만에 자동 기상 |
+| 프론트 | Firebase Hosting (Spark, 무료) | https://chamjima-frontend.web.app |
+| 백엔드(API+OSRM) | Google Cloud Run | https://chamjima-backend-412068365628.asia-northeast3.run.app (프로젝트 `chamjima-app`) |
+| DB | Neon (Postgres) | 프로젝트 `neondb`, 리전 us-east-2 |
 
-### 1. 프론트 — Render Static Site
+**Render는 안 쓴다.** 처음엔 프론트를 Render Static Site로 계획했으나, Render의
+Blueprint 배포 흐름이 무료 정적 사이트에도 결제 정보 등록을 요구해서(공식 문서상
+"카드 불필요"와 실제 동작이 다름 — 2026-08-10 확인) Firebase Hosting Spark 플랜으로
+바꿨다. Spark는 카드 자체를 요구하지 않는다(공식 확인). 이 프로젝트에 `render.yaml`이
+없는 이유가 이거다.
 
-Render 대시보드에서 **New + → Static Site** (Blueprint 아님 — Blueprint sync는 아래
-`render.yaml`의 유료 백엔드 서비스도 함께 만들어버린다).
+**콜드 스타트:** 첫 실제 배포 후 헬스체크가 약 1초 만에 응답했다(로컬 실측 예상치
+2.8초보다 빠름 — 클라우드 vCPU가 예상보다 나쁘지 않았던 것으로 보임). "3초 안에"
+카피와는 여전히 타협이 있을 수 있으나, 우려했던 것만큼 심각하지 않다.
 
-| 항목 | 값 |
-|---|---|
-| Root Directory | `frontend` |
-| Build Command | `npm install && npm run build` |
-| Publish Directory | `dist` |
-| 환경변수 `VITE_KAKAO_MAP_KEY` | `frontend/.env.local`의 값을 그대로 |
-| 환경변수 `VITE_API_BASE_URL` | 아래 3번에서 나온 Cloud Run URL |
+**비용 안전장치:** Cloud Run만 카드 등록이 필수고 무료 한도(월 2백만 요청/180,000
+vCPU-초) 초과 시 자동 과금된다(공식 확인) — Firebase/Neon과 달리 하드 캡이 아니다.
+Google Cloud 콘솔에서 예산 알림을 걸어두는 걸 권장.
 
-배포된 도메인(`*.onrender.com`)을 **카카오 개발자센터 → 내 애플리케이션 → 앱 설정 →
-플랫폼 → Web 플랫폼**에 등록해야 지도가 뜬다. 빠뜨리면 화면은 뜨는데 지도 자리만 비어 보인다.
+### 재배포 방법
 
-### 2. DB — Neon (Postgres)
+**프론트 업데이트:**
+```bash
+cd frontend && npm run build
+cd .. && npx --yes firebase-tools deploy --only hosting
+```
+`VITE_API_BASE_URL`/`VITE_KAKAO_MAP_KEY`는 빌드 타임에 박히므로 `frontend/.env.local`에
+미리 설정돼 있어야 한다(git에는 안 올라감).
 
-1. [neon.tech](https://neon.tech) 가입 (카드 불필요), 프로젝트 생성 — 리전은 서울에서 가장
-   가까운 곳으로.
-2. 대시보드의 Connection Details에서 host, database, username, password를 확인.
-3. Spring 쪽 형식으로 조합:
-   - `DB_URL` = `jdbc:postgresql://<host>/<database>?sslmode=require`
-   - `DB_USERNAME` = Neon이 준 username
-   - `DB_PASSWORD` = Neon이 준 password
-4. 코드 변경 없음 — JDBC URL 스킴(`jdbc:postgresql:`)으로 드라이버가 자동 선택된다
-   (`build.gradle`에 두 드라이버 모두 있음). 스키마는 `ddl-auto=update`가 첫 기동 때
-   자동 생성한다.
-5. 로컬 MySQL의 데이터를 옮기고 싶다면 `mysqldump`로 뜬 뒤 `pgloader` 등으로 이관 —
-   MVP 단계에서는 그냥 Neon에서 비어있는 상태로 시작해 화장실/약국 데이터를 다시
-   임포트하는 쪽이 더 간단하다(위 3, 5번 항목 참고).
+**백엔드 업데이트:**
+```bash
+cd backend
+export PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH"
+gcloud run deploy chamjima-backend --project=chamjima-app --source . \
+  --region asia-northeast3 --memory 1Gi --allow-unauthenticated
+```
+환경변수만 바꿀 때는 이미지 재빌드 없이 더 빠르다:
+```bash
+gcloud run services update chamjima-backend --project=chamjima-app \
+  --region asia-northeast3 --update-env-vars "KEY=VALUE"
+```
 
-### 3. 백엔드 — Google Cloud Run
+### 처음부터 새로 설정할 때 (다른 컴퓨터/계정)
 
-`backend/Dockerfile`이 OSRM 전처리(서울 클리핑 + foot 프로필 빌드)까지 빌드 단계에서
-전부 자동으로 한다 — 로컬에서 미리 만들어둔 산출물을 옮길 필요가 없다. 로컬에 Docker가
-없어도 Cloud Build가 원격으로 이미지를 빌드하므로 `gcloud` CLI만 있으면 된다.
+**1. DB — Neon (Postgres)**
+
+1. [neon.tech](https://neon.tech) 가입 (카드 불필요), 프로젝트 생성.
+2. Connection Details에서 host, database, username, password 확인 후 조합:
+   `DB_URL=jdbc:postgresql://<host>/<database>?sslmode=require` (Neon이 주는 문자열의
+   `channel_binding=require`는 뺄 것 — pgjdbc는 이 파라미터를 `channelBinding`으로만
+   인식해서 그대로 넣으면 안 된다. `sslmode=require`만으로 정상 연결 확인됨.)
+3. 코드 변경 없음 — JDBC URL 스킴으로 드라이버 자동 선택(`build.gradle`에 MySQL·Postgres
+   둘 다 있음). 스키마는 `ddl-auto=update`가 첫 기동 때 자동 생성.
+4. 로컬 MySQL 데이터를 옮기려면(권장 — CSV 재임포트는 카카오 geocoding을 수천 번
+   다시 호출하는 낭비): 테이블별로 MySQL에서 TSV 추출 → `psql \copy`로 적재.
+   ```bash
+   mysql -u chamjima chamjima -B -N -e "SELECT ... FROM restrooms" | \
+     psql "$NEON_URL" -c "\copy restrooms (...) FROM STDIN WITH (FORMAT csv, DELIMITER E'\t', NULL 'NULL', QUOTE E'\x01')"
+   ```
+   bit(1) 컬럼은 `CAST(col AS UNSIGNED)`로 0/1 정수로 뽑으면 Postgres boolean이 그대로
+   받는다. 옮긴 뒤 시퀀스를 맞출 것: `SELECT setval(pg_get_serial_sequence('restrooms','id'), (SELECT MAX(id) FROM restrooms));`
+   (모든 테이블에 반복). 안 하면 다음 Hibernate insert가 기존 id와 충돌한다.
+
+**2. 백엔드 — Google Cloud Run**
 
 ```bash
-# 최초 1회
+brew install --cask google-cloud-sdk
+export PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH"
 gcloud auth login
+gcloud projects create <프로젝트ID>
 gcloud config set project <프로젝트ID>
+gcloud billing projects link <프로젝트ID> --billing-account=<결제계정ID>  # console.cloud.google.com/billing 에서 먼저 결제계정 생성 필요 - 카드 등록 필수
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com
 
-# 배포 (backend/ 디렉터리를 소스로 올려서 Dockerfile로 원격 빌드)
+cd backend
 gcloud run deploy chamjima-backend \
-  --source ./backend \
+  --source . \
   --region asia-northeast3 \
   --memory 1Gi \
   --allow-unauthenticated \
@@ -182,18 +204,35 @@ gcloud run deploy chamjima-backend \
 - `asia-northeast3` = 서울 리전(공식 확인).
 - `--memory 1Gi` — JVM(약 170~300MB)과 OSRM(약 20~280MB, mmap이라 조회 패턴에 따라
   변동)을 한 컨테이너에서 같이 띄우므로 기본값 512MiB로는 부족하다.
-- `OSRM_BASE_URL=http://localhost:5001` — OSRM이 같은 컨테이너 안에서 뜨므로(entrypoint.sh
-  참고) 항상 localhost다. 다른 서비스로 분리하지 않는 이유는 위 배포 표 설명 참고.
-- 첫 배포 후 나오는 `*.run.app` URL을 위 1번의 `VITE_API_BASE_URL`에 넣고 프론트를
-  다시 배포해야 연결된다.
+- `OSRM_BASE_URL=http://localhost:5001` — OSRM이 같은 컨테이너 안에서 뜨므로
+  (`entrypoint.sh` 참고) 항상 localhost다.
+- `backend/Dockerfile`이 OSRM 전처리(서울 클리핑 + foot 프로필 빌드)까지 빌드 단계에서
+  전부 자동으로 한다. 로컬에 Docker가 없어도 Cloud Build가 원격으로 빌드하므로
+  `gcloud` CLI만 있으면 된다.
+- 결제 계정이 계정에 하나도 없으면 `gcloud billing accounts list`가 빈 목록을 반환한다
+  — 이 경우 콘솔(console.cloud.google.com/billing)에서 직접 만들어야 하고, CLI로는
+  대신할 수 없다(카드 입력은 브라우저에서만 받음).
 
-**콜드 스타트에 대해 솔직하게:** 로컬에서 실측한 값은 OSRM 기동 약 0.3초, Spring Boot
-jar 기동 약 2.8초(맥북 기준, OS 파일 캐시가 남아있는 상태라 실제보다 빠를 수 있음).
-클라우드의 약한 vCPU에서는 이보다 걸릴 수 있어, 15분 이상 방치 후 첫 요청은 최소
-몇 초가 걸린다고 보는 게 정확하다. Render 무료의 콜드 스타트(약 1분)보다는 훨씬
-낫지만 "3초 안에"를 완전히 지키지는 못한다 — 트래픽이 늘어 인스턴스가 계속 따뜻하게
-유지될수록 이 문제는 자연히 옅어진다.
+**3. 프론트 — Firebase Hosting**
 
-**비용 안전장치:** Cloud Run은 무료 한도(월 2백만 요청 / 180,000 vCPU-초)를 넘으면
-카드로 자동 과금된다(공식 확인) — Render/Neon과 달리 하드 캡이 아니다. Google Cloud
-콘솔에서 예산 알림을 걸어두는 걸 권장한다.
+```bash
+npx --yes firebase-tools login
+npx --yes firebase-tools projects:create <프로젝트ID> --display-name "<이름>"
+```
+`.firebaserc`의 `default`를 그 프로젝트 ID로 바꾸고,
+`frontend/.env.local`에 `VITE_API_BASE_URL`(위 Cloud Run URL)과 `VITE_KAKAO_MAP_KEY`를
+채운 뒤:
+```bash
+cd frontend && npm run build && cd ..
+npx --yes firebase-tools deploy --only hosting
+```
+
+배포된 도메인(`*.web.app`)을 **카카오 개발자센터 → 내 애플리케이션 → 앱 설정 →
+플랫폼 → Web 플랫폼**에 등록해야 지도가 뜬다. 빠뜨리면 화면은 뜨는데 지도 자리만
+비어 보인다 — 앱이 "카카오맵 SDK 로드 실패"로 명확히 알려준다.
+
+마지막으로 백엔드 CORS를 이 도메인으로 업데이트:
+```bash
+gcloud run services update chamjima-backend --project=<프로젝트ID> \
+  --region asia-northeast3 --update-env-vars "CORS_ALLOWED_ORIGINS=https://<프론트 도메인>"
+```

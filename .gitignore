@@ -7,3 +7,4 @@ backend/data/
 .vscode/
 .playwright-mcp/
 backend/deploy-cloudrun.sh
+.firebase/
